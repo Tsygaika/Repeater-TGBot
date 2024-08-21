@@ -1,0 +1,10 @@
+telebot==0.0.5
+Flask==2.2.3
+requests==2.27.1
+moviepy==1.0.3
+SpeechRecognition==3.10.0
+soundfile==0.12.1
+config==0.5.1
+Werkzeug==2.2.2
+openpyxl==3.0.9
+
