@@ -9,7 +9,7 @@ import telebot
 
 import openpyxl
 
-bot = TeleBot('7422012459:AAF6gJu-dmyvVD_GNk9vLO-bNXuQm3p9Uo8')
+bot = TeleBot('5989893213:AAFtBt46olJPvrMOUYFPgXxcyYNPOeK0_eI')
 
 ################ КОМАНДЫ ################ КОМАНДЫ ################
 @bot.message_handler(commands=["start"])
@@ -65,6 +65,56 @@ def help(message):
 @bot.message_handler(commands=["version"])
 def version(message):
     bot.send_message(message.chat.id, 'Версия бота: 07092024')
+
+
+@bot.message_handler(commands=["parseron"])  #выключает parser
+def parseron(message):
+    book = openpyxl.open("data/data.xlsx")
+    sheets_list = book.sheetnames  # получаем список листов
+
+    for i in sheets_list:  # ищем лист пользователя
+        if i == str(message.chat.id):
+            sheet = book[i]
+            book.active = book[i]  # задаем новую активную страницу
+            break
+
+    else:  # если листа для такого пользователя нет, то создаем
+        book.create_sheet(str(message.chat.id))
+        book.active = book[str(message.chat.id)]
+        sheet = book.active
+
+    link = sheet.cell(row = 0 + 1, column = 3 + 1)  # вносим изменения
+    link.value = 'parser:'
+    link = sheet.cell(row=0 + 1, column=4 + 1)
+    link.value = 1
+
+    book.save('data/data.xlsx')  # сохраняем
+    bot.send_message(message.chat.id, 'Парсер включен')
+
+
+@bot.message_handler(commands=["parseroff"])  #выключает parser
+def parseroff(message):
+    book = openpyxl.open("data/data.xlsx")
+    sheets_list = book.sheetnames  # получаем список листов
+
+    for i in sheets_list:  # ищем лист пользователя
+        if i == str(message.chat.id):
+            sheet = book[i]
+            book.active = book[i]  # задаем новую активную страницу
+            break
+
+    else:  # если листа для такого пользователя нет, то создаем
+        book.create_sheet(str(message.chat.id))
+        book.active = book[str(message.chat.id)]
+        sheet = book.active
+
+    link = sheet.cell(row=0 + 1, column=3 + 1)  # вносим изменения
+    link.value = 'parser:'
+    link = sheet.cell(row=0 + 1, column=4 + 1)
+    link.value = 0
+
+    book.save('data/data.xlsx')  # сохраняем
+    bot.send_message(message.chat.id, 'Парсер выключен')
 
 ################ ОБРАБОТКА КНОПОК ################
 @bot.callback_query_handler(func = lambda call:True)
@@ -151,6 +201,12 @@ def buttons(call):
         bot.send_message(call.message.chat.id, "произошло исключение")
         print('ИСКЛЮЧЕНИЕ')
 
+#ПАРСЕР САЙТ ПРОЕКТНОГО ОФИСА МИЭМ
+from parser import parser
+from apscheduler.schedulers.background import BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+scheduler.add_job(parser, 'interval', seconds = 60, args = [bot])
 
 #webhook####################### НЕ ТРОГАТЬ!!!###################
 keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
