@@ -1,101 +1,48 @@
-import openpyxl
+import pandas as pd
 from telebot import types
 
-def delete_pair(bot, message):
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames  # получаем список листов
+def delete_pair(bot, message, way_to_data):
+    df = pd.read_csv(way_to_data, converters={'pack_name': str, 'front_word': str, 'back_word': str})
 
-    for i in sheets_list:  # ищем лист беседы
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
+    from commands.get_packs_list import get_packs_list
+    packs_list = get_packs_list(message, way_to_data)
 
-    else:  # если листа для такой беседы нет, то создаем
-        book.create_sheet(str(message.chat.id))
-        book.active = book[str(message.chat.id)]
-        sheet = book.active
+    if len(packs_list) == 0:    #если нет колод
+        bot.send_message(message.chat.id, 'Вы не можете удалить пару слов, так как у вас не колод')
+        return
 
-    book.save('data/data.xlsx')  # сохраняем
 
     markup = types.InlineKeyboardMarkup(row_width=1)
+    for i in range(0, len(packs_list)):
+        btn = types.InlineKeyboardButton(text=packs_list[i], callback_data='delete:' + str(packs_list[i]))
+        markup.add(btn)
 
-    i = 0
-    if sheet[0 + 1][0 + 0].value != None:  # если есть хоть одна колода
-
-        while i < sheet.max_column + 1:  # создаем кнопки с названием каждой колоды
-            btn = types.InlineKeyboardButton(text=sheet[0 + 1][i + 0].value,
-                                             callback_data='delete:' + sheet[0 + 1][i + 0].value)
-            markup.add(btn)
-            i += 10
-
-    if i == 0:  # если нет колод
-        bot.send_message(message.chat.id, 'Вы не можете удалить пару слов, так как у вас не колод')
-
-    else:
-        bot.send_message(message.chat.id, 'Ваши колоды', reply_markup=markup)
-
-    book.close()
+    bot.send_message(message.chat.id, 'Ваши колоды', reply_markup=markup)
 
 
-def delete_pair_2(bot, call):
+def delete_pair_2(bot, call, way_to_data):
     bot_message = bot.edit_message_text('Отправьте первое слово в паре, которую нужно удалить',
                                         call.message.chat.id, message_id=call.message.message_id)
 
-    bot.register_next_step_handler(call.message, delete_pair_3, bot, call)
+    bot.register_next_step_handler(call.message, delete_pair_3, bot, call, way_to_data)
 
-def delete_pair_3(message, bot, call):
+def delete_pair_3(message, bot, call, way_to_data):
     first_word = message.text   #получаем первое слово из пары, которую нужно удалить
     call_data = call.data.replace('delete:', '')  # убираем префикс
     message = call.message
 
+    df = pd.read_csv(way_to_data, converters={'pack_name': str, 'front_word': str, 'back_word': str})
+    copy_df = df
+    df = df.loc[df['tg_id'] == message.chat.id]  # оставляем колоды только этого пользователя
+    df = df.loc[df['pack_name'] == call_data]  # оставляем только слова из одной колоды
 
-    # по стандарту ищем лист с id человека
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames
-
-    for i in sheets_list:
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
-
-    i = 0
-    while i < sheet.max_column + 1:  # ищем столбец с колодой
-        if sheet[0 + 1][i + 0].value == call_data:  # если текущая ячейка == имя колоды
-            break
-        i += 10
-
-        if i > sheet.max_column + 1:  # если вдруг каким-то образом мы не нашли колоду
-            bot.send_message(message.chat.id, "<code>Ошибка №10 в файле delete_pair</code>\nСообщить об ошибке @Tsygaika",
-                             parse_mode='HTML')
-
-    j = 2
-    flag = 1
-    while sheet[j + 1][i + 0].value != None:  # идем по списку пока не будет первая пустая строка
-        if sheet[j + 1][i + 0].value.lower() == first_word.lower(): #не учитываем регистр
-            flag = 0
-            second_word = sheet[j + 1][i + 1 + 0].value
-
-            while sheet[j + 1][i + 0].value != None:    #пока следующее слово не пусто
-                link = sheet.cell(row=j + 1, column=i + 1)  #перезаписываем первое слово
-                link.value = sheet[j + 1 + 1][i + 0].value
-                link = sheet.cell(row=j + 1, column=i + 1 + 1)  #перезаписываем второе слово
-                link.value = sheet[j + 1 + 1][i + 1 + 0].value
-                link = sheet.cell(row=j + 1, column=i + 2 + 1)  #перезаписываем дату
-                link.value = sheet[j + 1 + 1][i + 2 + 0].value
-                link = sheet.cell(row=j + 1, column=i + 3 + 1)  #перезаписываем интервал
-                link.value = sheet[j + 1 + 1][i + 3+ 0].value
-                j+=1
-
-            book.save('data/data.xlsx')
-            bot.edit_message_text(f'Пара слов <b>{first_word} - {second_word}</b> удалена', message.chat.id,
-                                  message_id=message.message_id, parse_mode='HTML')
-            book.close()
-            return
-
-        j += 1
-
-    if flag:
+    ind = df[df['front_word'] == first_word].index.tolist()
+    if len(ind) == 0:
         bot.edit_message_text('Такой пары в колоде нет', message.chat.id, message_id=message.message_id)
-        book.close()
+
+    else:
+        second_word = copy_df.loc[ind[0], 'back_word']
+
+        copy_df.drop(ind[0], inplace=True)
+        copy_df.to_csv(way_to_data, index=False)  # сохраняем df
+        bot.edit_message_text(f'Пара {first_word} - {second_word} удалена', message.chat.id, message_id=message.message_id)

@@ -1,15 +1,20 @@
 from telebot import TeleBot, types
-from random import *
 import config
 import os
 
 from background import keep_alive
 
-import telebot
+import pandas as pd
+# from tabulate import tabulate  #посмотреть dataframe
+# print(tabulate(df, headers='keys'))
 
-import openpyxl
+bot = TeleBot('7422012459:AAF6gJu-dmyvVD_GNk9vLO-bNXuQm3p9Uo8')
 
-bot = TeleBot('5989893213:AAFtBt46olJPvrMOUYFPgXxcyYNPOeK0_eI')
+Is_awvera = 0
+if Is_awvera:
+    way_to_data = '/data/data.csv'
+else:
+    way_to_data = 'data/data.csv'
 
 ################ КОМАНДЫ ################ КОМАНДЫ ################
 @bot.message_handler(commands=["start"])
@@ -23,37 +28,43 @@ def start(message):
 @bot.message_handler(commands=["add"])  #добавить карточку
 def add(message):
     from commands.add_cards import add_cards
-    add_cards(bot, message)
+    add_cards(bot, message, way_to_data)
 
 
 @bot.message_handler(commands=["create"])   #создать список
 def create(message):
     from commands.create_pack import create_pack
-    create_pack(bot, message)
+    create_pack(bot, message, way_to_data)
 
+@bot.message_handler(commands=["test"])   #УБРАТЬ ИЛИ ЗАМЕНИТЬ НА DATA
+def test(message):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    btn = types.InlineKeyboardButton(text='Обновить', callback_data='update')
+    markup.add(btn)
+    bot.send_message(message.chat.id, 'текст <tg-spoiler> Ваш текст </tg-spoiler> текст', parse_mode='HTML',reply_markup = markup)
 
 @bot.message_handler(commands=["watch"])    #посмотреть список карточек
 def watch(message):
     from commands.watch import watch
-    watch(bot, message)
+    watch(bot, message, way_to_data)
 
 
 @bot.message_handler(commands=["repeat"])   #повторить карточки
 def repeat(message):
     from commands.repeat import repeat
-    repeat(bot, message)
+    repeat(bot, message, way_to_data)
 
 
 @bot.message_handler(commands=["delpair"])   #повторить карточки
 def delpair(message):
     from commands.delete_pair import delete_pair
-    delete_pair(bot, message)
+    delete_pair(bot, message, way_to_data)
 
 
 @bot.message_handler(commands=["showdata"])   #повторить карточки
 def showdata(message):
     from commands.showdata import showdata
-    showdata(bot, message)
+    showdata(bot, message, way_to_data)
 
 
 @bot.message_handler(commands=["help"])
@@ -67,54 +78,54 @@ def version(message):
     bot.send_message(message.chat.id, 'Версия бота: 07092024')
 
 
-@bot.message_handler(commands=["parseron"])  #выключает parser
-def parseron(message):
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames  # получаем список листов
-
-    for i in sheets_list:  # ищем лист пользователя
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
-
-    else:  # если листа для такого пользователя нет, то создаем
-        book.create_sheet(str(message.chat.id))
-        book.active = book[str(message.chat.id)]
-        sheet = book.active
-
-    link = sheet.cell(row = 0 + 1, column = 3 + 1)  # вносим изменения
-    link.value = 'parser:'
-    link = sheet.cell(row=0 + 1, column=4 + 1)
-    link.value = 1
-
-    book.save('data/data.xlsx')  # сохраняем
-    bot.send_message(message.chat.id, 'Парсер включен')
-
-
-@bot.message_handler(commands=["parseroff"])  #выключает parser
-def parseroff(message):
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames  # получаем список листов
-
-    for i in sheets_list:  # ищем лист пользователя
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
-
-    else:  # если листа для такого пользователя нет, то создаем
-        book.create_sheet(str(message.chat.id))
-        book.active = book[str(message.chat.id)]
-        sheet = book.active
-
-    link = sheet.cell(row=0 + 1, column=3 + 1)  # вносим изменения
-    link.value = 'parser:'
-    link = sheet.cell(row=0 + 1, column=4 + 1)
-    link.value = 0
-
-    book.save('data/data.xlsx')  # сохраняем
-    bot.send_message(message.chat.id, 'Парсер выключен')
+# @bot.message_handler(commands=["parseron"])  #выключает parser
+# def parseron(message):
+#     book = openpyxl.open(way_to_data)
+#     sheets_list = book.sheetnames  # получаем список листов
+#
+#     for i in sheets_list:  # ищем лист пользователя
+#         if i == str(message.chat.id):
+#             sheet = book[i]
+#             book.active = book[i]  # задаем новую активную страницу
+#             break
+#
+#     else:  # если листа для такого пользователя нет, то создаем
+#         book.create_sheet(str(message.chat.id))
+#         book.active = book[str(message.chat.id)]
+#         sheet = book.active
+#
+#     link = sheet.cell(row = 0 + 1, column = 3 + 1)  # вносим изменения
+#     link.value = 'parser:'
+#     link = sheet.cell(row=0 + 1, column=4 + 1)
+#     link.value = 1
+#
+#     book.save(way_to_data)  # сохраняем
+#     bot.send_message(message.chat.id, 'Парсер включен')
+#
+#
+# @bot.message_handler(commands=["parseroff"])  #выключает parser
+# def parseroff(message):
+#     book = openpyxl.open(way_to_data)
+#     sheets_list = book.sheetnames  # получаем список листов
+#
+#     for i in sheets_list:  # ищем лист пользователя
+#         if i == str(message.chat.id):
+#             sheet = book[i]
+#             book.active = book[i]  # задаем новую активную страницу
+#             break
+#
+#     else:  # если листа для такого пользователя нет, то создаем
+#         book.create_sheet(str(message.chat.id))
+#         book.active = book[str(message.chat.id)]
+#         sheet = book.active
+#
+#     link = sheet.cell(row=0 + 1, column=3 + 1)  # вносим изменения
+#     link.value = 'parser:'
+#     link = sheet.cell(row=0 + 1, column=4 + 1)
+#     link.value = 0
+#
+#     book.save(way_to_data)  # сохраняем
+#     bot.send_message(message.chat.id, 'Парсер выключен')
 
 ################ ОБРАБОТКА КНОПОК ################
 @bot.callback_query_handler(func = lambda call:True)
@@ -123,15 +134,15 @@ def buttons(call):
 
     if call.data == 'add_cards':
         from commands.add_cards import add_cards
-        add_cards(bot, call.message)
+        add_cards(bot, call.message, way_to_data)
 
     elif call.data == 'create_pack':
         from commands.create_pack import create_pack
-        create_pack(bot, call.message)
+        create_pack(bot, call.message, way_to_data)
 
     elif call.data.startswith('add_word_to:'):  #если строка начинается с 'add_word', то нужно добавить слово в колоду
         from commands.add_word import add_word
-        add_word(bot, call.message, call.data)
+        add_word(bot, call.message, call.data, way_to_data)
 
     #начало гайда в quizlet
     elif call.data.startswith('add_quizlet_to:'):
@@ -148,7 +159,7 @@ def buttons(call):
 
     elif call.data.startswith('next_2:'):
         from commands.quizlet_guide import next_2
-        next_2(bot, call.message, call.data)
+        next_2(bot, call.message, call.data, way_to_data)
 
     elif call.data.startswith('prev_2:'):
         from commands.quizlet_guide import prev_2
@@ -175,38 +186,39 @@ def buttons(call):
 
     elif call.data.startswith('watch:'):
         from commands.watch import open_pack
-        open_pack(bot, call)
+        open_pack(bot, call, way_to_data)
 
     elif call.data.startswith('showdata:'):
         from commands.showdata import open_pack
-        open_pack(bot, call)
+        open_pack(bot, call, way_to_data)
 
     elif call.data.startswith('repeat:'):
         from commands.repeat import repeat_2
-        repeat_2(bot, call)
+        repeat_2(bot, call.message, call.data.replace('repeat:', ''), way_to_data)
 
     elif call.data.startswith('check:'):
         from commands.repeat import repeat_3
-        repeat_3(bot, call)
+        repeat_3(bot, call, way_to_data)
 
     elif call.data.startswith('delete:'):
         from commands.delete_pair import delete_pair_2
-        delete_pair_2(bot, call)
+        delete_pair_2(bot, call, way_to_data)
 
     elif call.data.startswith(('easy:', 'medium:', 'hard:', 'again:')):
         from commands.repeat import edit
-        edit(bot, call)
+        edit(bot, call, way_to_data)
 
     else:   #иначе это названия его колод
         bot.send_message(call.message.chat.id, "произошло исключение")
         print('ИСКЛЮЧЕНИЕ')
 
+
 #ПАРСЕР САЙТ ПРОЕКТНОГО ОФИСА МИЭМ
-from parser import parser
-from apscheduler.schedulers.background import BackgroundScheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
-scheduler.add_job(parser, 'interval', seconds = 60, args = [bot])
+#from parser import parser
+#from apscheduler.schedulers.background import BackgroundScheduler
+#scheduler = BackgroundScheduler()
+#scheduler.start()
+#scheduler.add_job(parser, 'interval', seconds = 60, args = [bot, way_to_data])
 
 #webhook####################### НЕ ТРОГАТЬ!!!###################
 keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...

@@ -1,6 +1,6 @@
 from telebot import TeleBot, types
-from datetime import date
-import openpyxl
+from datetime import datetime
+import pandas as pd
 
 def quizlet_guide(bot, message, call_data):   #редактируем предыдущее сообщение и отправляем первый шаг из гайда
     call_data = call_data.split(':')[1] #получаем из call.data название колоды
@@ -64,69 +64,38 @@ def prev_2(bot, message, call_data):   #возвращаемся к первом
     bot.edit_message_media(media, message.chat.id, message.id, reply_markup=markup)
 
 
-def next_2(bot, message, call_data):   #меняем на третий шаг гайда
+def next_2(bot, message, call_data, way_to_data):   #меняем на третий шаг гайда
     call_data = call_data.split(':')[1]  # получаем из call.data название колоды
 
     markup = types.InlineKeyboardMarkup(row_width=2)
     btn_prev = types.InlineKeyboardButton(text='Назад', callback_data='prev_3:' + call_data)
-    #btn_next = types.InlineKeyboardButton(text='Готово', callback_data='next_3:' + call_data)
     markup.add(btn_prev)
 
     media = types.InputMediaPhoto(open("images/quizlet_guide_3.png", "rb"),
                                   caption='Нажмите на вариант «На выбор» и введите «=». Далее нажмите на кнопку «копировать текст» и отправьте текст боту')
     bot.edit_message_media(media, message.chat.id, message.id, reply_markup=markup)
 
-    bot.register_next_step_handler(message, next_2_2, bot, call_data) #ждем текста от пользователя
+    bot.register_next_step_handler(message, next_2_2, bot, call_data, way_to_data) #ждем текста от пользователя
 
 
-def next_2_2(message, bot, call_data):   #пофиксить повторы
+def next_2_2(message, bot, call_data, way_to_data):   #пофиксить повторы
     bot_message = bot.send_message(message.chat.id, "<code>Ошибка №9 в файле quizlet_guide</code>\nСообщить об ошибке @Tsygaika",
                          parse_mode='HTML') #если ошибка здесь, значит проблема в 126 строке book.save('data.xlsx')
 
     pairs = message.text.split('\n')    #пары слов
-    # тупо скопировал код из add_word(открываем таблицу, ищем в ней нужную колоду)
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames
 
-    for i in sheets_list:
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
+    df = pd.read_csv(way_to_data, converters={'pack_name' : str,'front_word' : str,'back_word' : str})
 
-
-    i = 0
-    while i < sheet.max_column + 1:  # ищем столбец с колодой
-        if sheet[0 + 1][i + 0].value == call_data:  # если текущая ячейка == имя колоды
-            break
-        i += 10
-
-        if i > sheet.max_column + 1:  # если вдруг каким-то образом мы не нашли колоду
-            bot.send_message(message.chat.id, "<code>Ошибка №5 в файле quizlet_guide</code>\nСообщить об ошибке @Tsygaika",
-                             parse_mode='HTML')
-
-    j = 2
     add_text = ', кроме(из-за неправильного формата):'    #если не все слова были введены правильно, то сообщим об этом
     for elem in pairs:
-        while sheet[j + 1][i + 0].value != None:  # ищем в колоде первую свободную строку
-            j += 1
-
         elem = elem.split('=')  #разделяем на 2 слова
         if len(elem) == 2:
-
-            link = sheet.cell(row=j + 1, column=i + 1)  # записываем слова
-            link.value = elem[0]
-            link = sheet.cell(row=j + 1, column=i + 1 + 1)
-            link.value = elem[1]
-            link = sheet.cell(row=j + 1, column=i + 2 + 1)
-            link.value = date.today()
-            link = sheet.cell(row=j + 1, column=i + 3 + 1)
-            link.value = 0  # сохраняем число интервалов
-
-            book.save('data/data.xlsx')  #тут может быть ошибка
+            df.loc[len(df)] = [message.chat.id, call_data, False, elem[0], elem[1], datetime.now().date(), 0]  # добавили техническую строку
 
         else:   #если какая-то пара слов была введена неправильно
             add_text = add_text + '\n' +  '='. join(elem)   #добавляем к тексту исходный вид слов
+
+    df.to_csv(way_to_data, index=False)  # сохраняем df
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton(text='Добавить еще из Quizlet', callback_data='next_2_3:' + call_data)#тут надо сразу без гайда
@@ -137,8 +106,6 @@ def next_2_2(message, bot, call_data):   #пофиксить повторы
         add_text = ''   #если все пары слов были правильные, то текст добавлять не будем
     bot.edit_message_text('Были добавлены все слова' + add_text, bot_message.chat.id, message_id=bot_message.message_id,
                           reply_markup=markup)
-
-    book.close()
 
 def next_2_3(bot, message, call_data):
     bot.edit_message_text('Отправьте список слов в том же формате', message.chat.id, message_id=message.message_id)

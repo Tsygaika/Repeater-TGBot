@@ -1,22 +1,21 @@
-import openpyxl
+from telebot import TeleBot, types
 
-def add_cards(bot, message):
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames  # получаем список листов
+def add_cards(bot, message, way_to_data):
+    from commands.get_packs_list import get_packs_list
+    packs_list = get_packs_list(message, way_to_data)
 
-    for i in sheets_list:  # ищем лист беседы
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup = types.InlineKeyboardMarkup(row_width=1)
 
-    else:  # если листа для такой беседы нет, то создаем
-        book.create_sheet(str(message.chat.id))
-        book.active = book[str(message.chat.id)]
-        sheet = book.active
+    for i in range(0, len(packs_list)):
+        btn = types.InlineKeyboardButton(text=packs_list[i], callback_data='packname:' + str(packs_list[i]) )
+        markup.add(btn)
 
-    book.save('data/data.xlsx')  # сохраняем
+    btn = types.InlineKeyboardButton(text='+ создать колоду', callback_data='create_pack')
+    markup.add(btn)
 
-    from commands.packs_list import packs_list
-    packs_list(bot, message, sheet)  # вывели сообщение с колодами
-    book.close()
+    try:    #в main эта функция используется дважды по-разному
+        bot.edit_message_text('Ваши колоды', message.chat.id, message_id=message.message_id, reply_markup=markup)
+
+    except Exception:
+        bot.send_message(message.chat.id, 'Ваши колоды', reply_markup=markup)

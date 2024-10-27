@@ -1,19 +1,19 @@
-from telebot import TeleBot, types
-import openpyxl
-import math
+from telebot import types
+import pandas as pd
 
-def create_pack(bot, message):
+def create_pack(bot, message, way_to_data):
     try:
         bot_message = bot.edit_message_text('Отправьте название колоды', message.chat.id, message_id = message.message_id)
     except Exception:
         bot_message = bot.send_message(message.chat.id, 'Отправьте название колоды')
 
-    bot.register_next_step_handler(message, create_pack_2, bot, bot_message)
+    bot.register_next_step_handler(message, create_pack_2, bot, bot_message, way_to_data)
 
-def create_pack_2(message, bot, bot_message):
-    from shortcuts.packs_list import packs_list     #получаем список уже имеющихся колод
-    packs_list = packs_list(bot, message)
+def create_pack_2(message, bot, bot_message, way_to_data):
+    from commands.get_packs_list import get_packs_list     #получаем список уже имеющихся колод
+    packs_list = get_packs_list(message, way_to_data)
 
+    print(message.text, packs_list)
     if message.text in packs_list:
         markup = types.InlineKeyboardMarkup(row_width=1)
         btn = types.InlineKeyboardButton(text='Изменить название', callback_data='create_pack')
@@ -23,34 +23,9 @@ def create_pack_2(message, bot, bot_message):
         bot.delete_message(message.chat.id, message.message_id)
         return
 
-    book = openpyxl.open("data/data.xlsx")
-    sheets_list = book.sheetnames  # получаем список листов
-
-    for i in sheets_list:  # ищем лист беседы
-        if i == str(message.chat.id):
-            sheet = book[i]
-            book.active = book[i]  # задаем новую активную страницу
-            break
-
-    if sheet.max_column == 1:  # когда лист пустой
-        i = 0
-
-    else:   #если есть хоть одна колода
-        i = math.ceil( sheet.max_column / 10 ) * 10 #с помощью округления вверх получаем номер следующего столбца
-
-    link = sheet.cell(row = 1 + 1, column = i + 1)  #создаем новую колоду
-    link.value = 'front'
-    link = sheet.cell(row = 1 + 1, column = i + 1 + 1)
-    link.value = 'back'
-    link = sheet.cell(row = 1 + 1, column = i + 2 + 1)
-    link.value = 'description'
-    link = sheet.cell(row = 0 + 1, column = i + 1 + 1)
-    link.value = "<-pack's name"
-    link = sheet.cell(row = 0 + 1, column = i + 1)
-    link.value = message.text
-
-    book.save('data/data.xlsx')
-    book.close()
+    df = pd.read_csv(way_to_data, converters={'pack_name' : str,'front_word' : str,'back_word' : str})
+    df.loc[len(df)] = [message.chat.id, message.text,True,'','',0,0]    #добавили техническую строку
+    df.to_csv(way_to_data, index=False) #сохраняем df
 
 
     markup = types.InlineKeyboardMarkup(row_width=1)

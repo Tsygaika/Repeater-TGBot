@@ -1,20 +1,43 @@
-from openpyxl.worksheet.print_settings import PRINT_AREA_RE
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 import time
 import openpyxl
 
-def parser(bot):
+bn = '\n'   #amvera жалуется на \ в f-строке, поэтому так
 
-    driver = webdriver.Chrome()
+def parser(bot, way_to_data):
+    # хз, что это, но с ним устанавливается chrome
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Запуск в фоновом режиме
+    chrome_options.add_argument("--no-sandbox")  # Отключение песочницы
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Использование временной папки для файлов
+
+    service = Service("/usr/bin/chromedriver")  # Укажите путь к драйверу
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920x1080")
+
     driver.set_window_position(0, 0)
     driver.set_window_size(1920, 1080)
-    driver.get("https://cabinet.miem.hse.ru/#/projects/sandbox")    #получаем код страницы "песочницы"
+
+    options = Options()
+
+    options.add_argument("start-maximized")  # Открыть браузер в максимизированном режиме
+    options.add_argument("disable-infobars")  # Отключить информационные панели
+    options.add_argument("--disable-extensions")  # Отключить расширения
+    options.add_argument("--disable-gpu")  # Применимо только для Windows
+    options.add_argument("--disable-dev-shm-usage")  # Решение проблемы ограниченных ресурсов
+    options.add_argument("--no-sandbox")  # Обойти модель безопасности ОС
+    #хз, что это, но с ним устанавливается chrome
+
+
+    driver.get("https://cabinet.miem.hse.ru/#/projects/sandbox")  # получаем код страницы "песочницы"
     time.sleep(2)
 
     main_page = driver.page_source  #получаем html код
 
-
-    book = openpyxl.open("data/data.xlsx")
+    book = openpyxl.open(way_to_data)
     sheet = book['settings']        #открываем страницу настроек
     book.active = book['settings']
     projects_list = sheet[0 + 1][3 + 0].value.split('_')    #получаем список уже просмотренных проектов
@@ -98,9 +121,9 @@ def parser(bot):
 
             #обрабатываем требования, чтобы они красиво выглядели
             #   - заменяем на \n, чтобы требования не были в одну строчку
-            all_positions = all_positions + (f"\n \n[б]Позиция:[/б] {position}\n[б]Кол-во:[/б] {amount}\n[б]Требования:[/б] "
-                                             f"{requirements.replace('- -','-').replace('-','\n•')}\n[б]Желательно:[/б] "
-                                             f"{welcome.replace('- -','-').replace('-','\n•')}\n")
+            all_positions = all_positions + (f"{bn} {bn}[б]Позиция:[/б] {position}{bn}[б]Кол-во:[/б] {amount}{bn}[б]Требования:[/б] "
+                                             f"{requirements.replace('- -','-').replace('-',f'{bn}•')}{bn}[б]Желательно:[/б] "
+                                             f"{welcome.replace('- -','-').replace('-',f'{bn}•')}{bn}")
 
 
         #ЧИСТИМ от html тегов;  по [splitter] будем потом обратно делить на разные типы информации
@@ -116,13 +139,15 @@ def parser(bot):
 
         array = res.split('[splitter]') #после очистки разделяем обратно все переменные
         #добавляем ссылки и жирность
-        res = (f'<b>Проект №<a href="https://cabinet.miem.hse.ru/#/project/{i}/">{i}</a>\n\n</b><b>Тип</b>: {array[0]}\n\n'
-               f'<b>Название:</b> {array[1]}\n\n<b>Цель:</b> {array[2]}\n\n<b>Ожидаемые результаты:</b>\n {array[3]}\n\n<b>'
-               f'Требования:</b>\n {array[4]}\n\n<b>Вакансии(<a href="https://cabinet.miem.hse.ru/#/project/{i}/vacancies">'
+        res = (f'<b>Проект №<a href="https://cabinet.miem.hse.ru/#/project/{i}/">{i}</a>{bn}{bn}</b><b>Тип</b>: {array[0]}{bn}{bn}'
+               f'<b>Название:</b> {array[1]}{bn}{bn}<b>Цель:</b> {array[2]}{bn}{bn}<b>Ожидаемые результаты:</b>\n {array[3]}{bn}{bn}<b>'
+               f'Требования:</b>{bn} {array[4]}{bn}{bn}<b>Вакансии(<a href="https://cabinet.miem.hse.ru/#/project/{i}/vacancies">'
                f'ссылка</a>):</b> {array[5]}')
         #добавляем теги жирности (такой костыль нужен, чтобы на этапе очистки теги не удалились)
         res = res.replace('[б]', "<b>").replace('[/б]', "</b>").replace('\n\n\n', '\n\n')
 
+
+        print(f"Текст для рассылки:\n[{res}]")
 
         #делаем рассылку для всех, кто ее получает
         sheets_list = book.sheetnames  # получаем список листов
@@ -135,13 +160,22 @@ def parser(bot):
                 book.active = book[j]
 
             if  sheet.max_column > 4 and sheet[0 + 1][4 + 0].value: #если рассылка включена, то отправляем
-                bot.send_message(j, res[:4000 + 1], parse_mode='HTML')
+                print(res[:4090 + 1])
+                try:
+                    bot.send_message(j, res[:4090 + 1], parse_mode='HTML')
+                except Exception:
+                    try:
+                        bot.send_message(j, res[:4090 + 1]+'>', parse_mode='HTML')
+                    except Exception:
+                        bot.send_message(j, f'[!] <b>Проект №<a href="https://cabinet.miem.hse.ru/#/project/{i}/">{i}</a></b>\nДанные недоступны из-за неизвестной ошибки', parse_mode='HTML')
 
+        print(f'Рассылка проекта {i} завершена')
 
         #сохраняем еще один просмотренный проект на страницу настроек
         sheet = book['settings']
         book.active = book['settings']
         link = sheet.cell(row=0 + 1, column=3 + 1)
         link.value = i + '_' + sheet[0 + 1][3 + 0].value
+        print(f"Проект {i} добавлен в просмотренные")
 
-        book.save('data/data.xlsx') #сохраняем проект
+        book.save(way_to_data) #сохраняем проект
