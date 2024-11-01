@@ -46,9 +46,9 @@ def repeat_2(bot, message, pack_name, way_to_data):
         row = df.iloc[rand]
 
         markup = types.InlineKeyboardMarkup(row_width=1)
-        btn = types.InlineKeyboardButton(text='Проверить', callback_data=f'check:{row['pack_name']}:{row['front_word']}')
+        btn = types.InlineKeyboardButton(text='Проверить', callback_data=f"check:{row['pack_name']}:{row['front_word']}")
         markup.add(btn)
-        bot.edit_message_text(f'[{df.shape[0]}] Вспомните пару к слову\n\n<b>{row['front_word']}</b>', message.chat.id,
+        bot.edit_message_text(f"[{df.shape[0]}] Вспомните пару к слову\n\n<b>{row['front_word']}\n \nㅤ</b>", message.chat.id,
                               message_id=message.message_id, parse_mode='HTML', reply_markup=markup)
 
 
@@ -76,7 +76,7 @@ def repeat_3(bot, call, way_to_data):
     btn4 = types.InlineKeyboardButton(text='Повторить еще раз', callback_data=f'again:{name}:{front_word}')
     markup.add(btn1, btn2, btn3, btn4)
 
-    bot.edit_message_text(f'[{rows}] Проверка\n\n<b>{front_word}</b> - <b>{back_word}</b>\n\n'
+    bot.edit_message_text(f'[{rows}] Проверка\n<b>{front_word}</b> - <b>{back_word}</b>\n'
                           f'Насколько легко было вспомнить?', message.chat.id, message_id=message.message_id, parse_mode='HTML',
                           reply_markup=markup)
 
