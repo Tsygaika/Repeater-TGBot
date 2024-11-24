@@ -92,12 +92,12 @@ def next_2_2(message, bot, call_data, way_to_data):   #пофиксить пов
         if len(elem) == 2:
             if len(df.index): ind = df.index[-1] + 1    #кринж какой-то
             else: ind = 0
-            df.loc[ind] = [message.chat.id, call_data, False, elem[0], elem[1], datetime.now().date(), 0]
+            df.loc[ind] = [message.chat.id, call_data, False, elem[0].replace(',','/'), elem[1].replace(',','/'), datetime.now().date(), 0]
 
         else:   #если какая-то пара слов была введена неправильно
             add_text = add_text + '\n' +  '='. join(elem)   #добавляем к тексту исходный вид слов
 
-    df.to_csv(way_to_data, index=False)  # сохраняем df
+    df.to_csv(way_to_data, index=False, encoding="utf-8-sig")  # сохраняем df
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton(text='Добавить еще из Quizlet', callback_data='next_2_3:' + call_data)#тут надо сразу без гайда

@@ -5,7 +5,6 @@ def add_cards(bot, message, way_to_data):
     packs_list = get_packs_list(message, way_to_data)
 
     markup = types.InlineKeyboardMarkup(row_width=1)
-    markup = types.InlineKeyboardMarkup(row_width=1)
 
     for i in range(0, len(packs_list)):
         btn = types.InlineKeyboardButton(text=packs_list[i], callback_data='packname:' + str(packs_list[i]) )

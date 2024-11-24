@@ -72,7 +72,7 @@ def repeat_3(bot, call, way_to_data):
     btn4 = types.InlineKeyboardButton(text='Повторить еще раз', callback_data=f'again:{name}:{ind}')
     markup.add(btn1, btn2, btn3, btn4)
 
-    bot.edit_message_text(f'[{rows}] Проверка\n<b>{row['front_word']}</b> - <b>{row['back_word']}</b>\n'
+    bot.edit_message_text(f"[{rows}] Проверка\n<b>{row['front_word']}</b> - <b>{row['back_word']}</b>\n"
                           f'Насколько легко было вспомнить?', message.chat.id, message_id=message.message_id,
                           parse_mode='HTML', reply_markup=markup)
 

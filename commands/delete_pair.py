@@ -44,5 +44,5 @@ def delete_pair_3(message, bot, call, way_to_data):
         second_word = copy_df.loc[ind[0], 'back_word']
 
         copy_df.drop(ind[0], inplace=True)
-        copy_df.to_csv(way_to_data, index=False)  # сохраняем df
+        copy_df.to_csv(way_to_data, index=False, encoding="utf-8-sig")  # сохраняем df
         bot.edit_message_text(f'Пара {first_word} - {second_word} удалена', message.chat.id, message_id=message.message_id)
