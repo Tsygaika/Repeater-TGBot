@@ -90,7 +90,9 @@ def next_2_2(message, bot, call_data, way_to_data):   #пофиксить пов
     for elem in pairs:
         elem = elem.split('=')  #разделяем на 2 слова
         if len(elem) == 2:
-            df.loc[len(df)] = [message.chat.id, call_data, False, elem[0], elem[1], datetime.now().date(), 0]  # добавили техническую строку
+            if len(df.index): ind = df.index[-1] + 1    #кринж какой-то
+            else: ind = 0
+            df.loc[ind] = [message.chat.id, call_data, False, elem[0], elem[1], datetime.now().date(), 0]
 
         else:   #если какая-то пара слов была введена неправильно
             add_text = add_text + '\n' +  '='. join(elem)   #добавляем к тексту исходный вид слов
@@ -107,8 +109,8 @@ def next_2_2(message, bot, call_data, way_to_data):   #пофиксить пов
     bot.edit_message_text('Были добавлены все слова' + add_text, bot_message.chat.id, message_id=bot_message.message_id,
                           reply_markup=markup)
 
-def next_2_3(bot, message, call_data):
+def next_2_3(bot, message, call_data, way_to_data):
     bot.edit_message_text('Отправьте список слов в том же формате', message.chat.id, message_id=message.message_id)
     call_data = call_data.split(':')[1]  # получаем из call.data название колоды
 
-    bot.register_next_step_handler(message, next_2_2, bot, call_data)
+    bot.register_next_step_handler(message, next_2_2, bot, call_data, way_to_data)

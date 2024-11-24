@@ -22,7 +22,9 @@ def add_word_2(message, bot, data, bot_message, way_to_data):
                               message_id=bot_message.message_id, reply_markup=markup)
         return
 
-    df.loc[len(df)] = [message.chat.id, data, False, words[0], words[1], datetime.now().date(), 0]   #добавляем в df
+    if len(df.index): ind = df.index[-1] + 1 #определяем индекс последнего элемента(после удаления пары он не равен длине dataframe)
+    else: ind = 0
+    df.loc[ind] = [message.chat.id, data, False, words[0], words[1], datetime.now().date(), 0]   #добавляем в df
     df.to_csv(way_to_data, index=False)  # сохраняем df
 
     markup = types.InlineKeyboardMarkup(row_width=1)

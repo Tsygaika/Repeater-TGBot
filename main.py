@@ -167,7 +167,7 @@ def buttons(call):
 
     elif call.data.startswith('next_2_3:'):
         from commands.quizlet_guide import next_2_3
-        next_2_3(bot, call.message, call.data)
+        next_2_3(bot, call.message, call.data, way_to_data)
 
     elif call.data.startswith('prev_3:'):
         bot.clear_step_handler_by_chat_id(chat_id=call.message.chat.id) #из-за того, что мы ждали сообщение от

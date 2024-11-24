@@ -24,7 +24,10 @@ def create_pack_2(message, bot, bot_message, way_to_data):
         return
 
     df = pd.read_csv(way_to_data, converters={'pack_name' : str,'front_word' : str,'back_word' : str})
-    df.loc[len(df)] = [message.chat.id, message.text,True,'','',0,0]    #добавили техническую строку
+
+    if len(df.index): ind = df.index[-1] + 1
+    else: ind = 0
+    df.loc[ind] = [message.chat.id, message.text,True,'','',0,0]    #добавили техническую строку
     df.to_csv(way_to_data, index=False) #сохраняем df
 
 
