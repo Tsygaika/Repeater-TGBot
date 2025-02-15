@@ -4,33 +4,42 @@ from math import floor
 import pandas as pd
 from random import randint
 
-def repeat(bot, message, way_to_data):
+def repeat_0(bot, message):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    btn0 = types.InlineKeyboardButton(text='Рус - Анг', callback_data='mode:0')
+    btn1 = types.InlineKeyboardButton(text='Анг - Рус', callback_data='mode:1')
+    markup.add(btn0, btn1)
+    bot.send_message(message.chat.id, 'В каждом режиме будем повторять?', reply_markup=markup)
+
+def repeat_1(bot, call, way_to_data):
     from commands.get_packs_list import get_packs_list
-    pack_list = get_packs_list(message, way_to_data)
+    pack_list = get_packs_list(call.message, way_to_data)
 
     df = pd.read_csv(way_to_data, parse_dates=['date_of_repeat'],date_format='%Y-%m-%d',
                      converters={'pack_name': str, 'front_word': str, 'back_word': str})
-    df = df.loc[df['tg_id'] == message.chat.id]  # оставляем колоды только этого пользователя
+    df = df.loc[df['tg_id'] == call.message.chat.id]  # оставляем колоды только этого пользователя
     df = df.loc[df['created_flag'] == False]    #убираем тех.инфу
     df = df[pd.to_datetime(df['date_of_repeat']) <= datetime.now()]  # отсеиваем по времени
+
+    flag = int(call.data == 'mode:1')  #получаем режим повторения
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     for i in range(len(pack_list)):
         copy_df = df.loc[df['pack_name'] == pack_list[i]]   #считаем количество слов для каждой колоды
 
-        btn = types.InlineKeyboardButton(text=f"{pack_list[i]} [{copy_df.shape[0]}]", callback_data='repeat:' + str(pack_list[i]))
+        btn = types.InlineKeyboardButton(text=f"{pack_list[i]} [{copy_df.shape[0]}]", callback_data=f'repeat:{flag}:' + str(pack_list[i]))
         markup.add(btn)
 
     if len(pack_list) == 0:  # если нет колод
         btn = types.InlineKeyboardButton(text='+ создать колоду', callback_data='create_pack')
         markup.add(btn)
-        bot.send_message(message.chat.id, 'У вас нет колод', reply_markup=markup)
+        bot.send_message(call.message.chat.id, 'У вас нет колод', reply_markup=markup)
 
     else:
-        bot.send_message(message.chat.id, 'Ваши колоды', reply_markup=markup)
+        bot.send_message(call.message.chat.id, 'Ваши колоды', reply_markup=markup)
 
 
-def repeat_2(bot, message, pack_name, way_to_data):
+def repeat_2(bot, message, flag, pack_name, way_to_data):
     df = pd.read_csv(way_to_data, parse_dates=['date_of_repeat'],date_format='%Y-%m-%d',converters={'pack_name': str, 'front_word': str, 'back_word': str})
     df = df.loc[df['tg_id'] == message.chat.id]  # оставляем колоды только этого пользователя
     df = df.loc[df['pack_name'] == pack_name]
@@ -44,10 +53,13 @@ def repeat_2(bot, message, pack_name, way_to_data):
         rand = randint(0, df.shape[0] - 1)
         row = df.iloc[rand]
 
+        if flag == '1': first_word = row['front_word']
+        else: first_word = row['back_word']
+
         markup = types.InlineKeyboardMarkup(row_width=1)
-        btn = types.InlineKeyboardButton(text='Проверить', callback_data=f"check:{row['pack_name']}:{row.name}")    #row.name - имя(индекс) строки
+        btn = types.InlineKeyboardButton(text='Проверить', callback_data=f"check:{flag}:{row['pack_name']}:{row.name}")    #row.name - имя(индекс) строки
         markup.add(btn)
-        bot.edit_message_text(f"[{df.shape[0]}] Вспомните пару к слову\n\n<b>{row['front_word']}\n \nㅤ</b>", message.chat.id,
+        bot.edit_message_text(f"[{df.shape[0]}] Вспомните пару к слову\n\n<b>{first_word}\n \nㅤ</b>", message.chat.id,
                               message_id=message.message_id, parse_mode='HTML', reply_markup=markup)
 
 
@@ -58,7 +70,7 @@ def repeat_3(bot, call, way_to_data):
 
     df['date_of_repeat'] = pd.to_datetime(df['date_of_repeat'], format='%Y-%m-%d', errors='coerce')
     df = df.loc[df['tg_id'] == call.message.chat.id]  # оставляем колоды только этого пользователя
-    name, ind = call.data.replace('check:', '').split(':')
+    flag, name, ind = call.data.replace('check:', '').split(':')
     df = df.loc[df['pack_name'] == name]
     df = df.loc[df['created_flag'] == False]    #эта строка и ниже чисто, чтобы получить правильное количество строк
     df = df[pd.to_datetime(df['date_of_repeat']) <= datetime.now()]  # отсеиваем по времени
@@ -66,13 +78,16 @@ def repeat_3(bot, call, way_to_data):
     row = df.loc[int(ind)]    #оставляем ту строку, у которой название как нужный индекс
 
     markup = types.InlineKeyboardMarkup(row_width=3)
-    btn1 = types.InlineKeyboardButton(text='Легко', callback_data=f'easy:{name}:{ind}')
-    btn2 = types.InlineKeyboardButton(text='Средне', callback_data=f'medium:{name}:{ind}')
-    btn3 = types.InlineKeyboardButton(text='Сложно', callback_data=f'hard:{name}:{ind}')
-    btn4 = types.InlineKeyboardButton(text='Повторить еще раз', callback_data=f'again:{name}:{ind}')
+    btn1 = types.InlineKeyboardButton(text='Легко', callback_data=f'easy:{flag}:{name}:{ind}')
+    btn2 = types.InlineKeyboardButton(text='Средне', callback_data=f'medium:{flag}:{name}:{ind}')
+    btn3 = types.InlineKeyboardButton(text='Сложно', callback_data=f'hard:{flag}:{name}:{ind}')
+    btn4 = types.InlineKeyboardButton(text='Повторить еще раз', callback_data=f'again:{flag}:{name}:{ind}')
     markup.add(btn1, btn2, btn3, btn4)
 
-    bot.edit_message_text(f"[{rows}] Проверка\n<b>{row['front_word']}</b> - <b>{row['back_word']}</b>\n"
+    first, second = row['front_word'], row['back_word'] #задаем слова
+    if flag != '1': first, second = second, first   #меняем их, если режим другой
+
+    bot.edit_message_text(f"[{rows}] Проверка\n<b>{first}</b> - <b>{second}</b>\n"
                           f'Насколько легко было вспомнить?', message.chat.id, message_id=message.message_id,
                           parse_mode='HTML', reply_markup=markup)
 
@@ -83,7 +98,7 @@ def edit(bot, call, way_to_data):
     df = pd.read_csv(way_to_data, parse_dates=['date_of_repeat'], date_format='%Y-%m-%d',converters={'pack_name': str, 'front_word': str, 'back_word': str, 'repeat_length': float})
     copy_df = df
     df = df.loc[df['tg_id'] == call.message.chat.id]  # оставляем колоды только этого пользователя
-    react, name, ind = call.data.split(':')
+    react, flag, name, ind = call.data.split(':')
     df = df.loc[df['pack_name'] == name]
     row = df.loc[int(ind)]
 
@@ -112,7 +127,7 @@ def edit(bot, call, way_to_data):
         copy_df.loc[int(ind), 'repeat_length'] = new_gap
         copy_df.to_csv(way_to_data, index=False)  # сохраняем df
 
-        repeat_2(bot, message, name, way_to_data)
+        repeat_2(bot, message, flag, name, way_to_data)
 
     except Exception as e:
         bot.send_message(message.chat.id, f"<code>Ошибка №9 в файле repeat</code>\nСообщить об ошибке @Tsygaika\n\n Код ошибки{e}",

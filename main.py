@@ -4,7 +4,6 @@ import os
 
 from background import keep_alive
 
-import pandas as pd
 # from tabulate import tabulate  #посмотреть dataframe
 # print(tabulate(df, headers='keys'))
 
@@ -53,31 +52,38 @@ def watch(message):
 def repeat(message):
     if Is_awvera:
         bot.send_document(-4580716050, open(r'/data/data.csv', 'rb'))
-    from commands.repeat import repeat
-    repeat(bot, message, way_to_data)
+    from commands.repeat import repeat_0
+    repeat_0(bot, message)
 
 
-@bot.message_handler(commands=["delpair"])   #повторить карточки
+@bot.message_handler(commands=["delpair"])   #удалить пару карточек
 def delpair(message):
     from commands.delete_pair import delete_pair
     delete_pair(bot, message, way_to_data)
 
 
-@bot.message_handler(commands=["showdata"])   #повторить карточки
+@bot.message_handler(commands=["showdata"])   #показать всю информацию о карточках в колоде
 def showdata(message):
     from commands.showdata import showdata
     showdata(bot, message, way_to_data)
 
 
+@bot.message_handler(commands=["download","load"])   #скачать все слова для конкретного пользователя
+def download(message):
+    from commands.download import download
+    download(bot, message, way_to_data)
+
+
 @bot.message_handler(commands=["help"])
 def help(message):
     bot.send_message(message.chat.id, "Список команд\n\n /add - добавить карточки в колоду\n/create - создать колоду"
-                                      "\n/watch - посмотреть колоду\n/repeat - повторить слова\n/delpair - удалить пару слов")
+                                      "\n/watch - посмотреть колоду\n/repeat - повторить слова\n/delpair - удалить пару слов\n"
+                                      "/download - скачать слова из всех колод")
 
 
 @bot.message_handler(commands=["version"])
 def version(message):
-    bot.send_message(message.chat.id, 'Версия бота: 07092024')
+    bot.send_message(message.chat.id, 'Версия бота: 15022025')
 
 
 # @bot.message_handler(commands=["parseron"])  #выключает parser
@@ -194,9 +200,17 @@ def buttons(call):
         from commands.showdata import open_pack
         open_pack(bot, call, way_to_data)
 
+    elif call.data.startswith('mode:'):
+        from commands.repeat import repeat_1
+        if call.data == 'mode:0': regime = 'Рус - Анг'
+        else: regime = 'Анг - Рус'
+        bot.edit_message_text(f'Был выбран режим: {regime}', call.message.chat.id, message_id=call.message.message_id)
+        repeat_1(bot, call, way_to_data)
+
     elif call.data.startswith('repeat:'):
         from commands.repeat import repeat_2
-        repeat_2(bot, call.message, call.data.replace('repeat:', ''), way_to_data)
+        flag, packname = call.data.replace('repeat:', '').split(':')
+        repeat_2(bot, call.message, flag, packname, way_to_data)
 
     elif call.data.startswith('check:'):
         from commands.repeat import repeat_3
