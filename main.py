@@ -229,12 +229,31 @@ def buttons(call):
         print('ИСКЛЮЧЕНИЕ')
 
 
-#ПАРСЕР САЙТ ПРОЕКТНОГО ОФИСА МИЭМ
-#from parser import parser
-#from apscheduler.schedulers.background import BackgroundScheduler
-#scheduler = BackgroundScheduler()
-#scheduler.start()
-#scheduler.add_job(parser, 'interval', seconds = 60, args = [bot, way_to_data])
+#### ПРОВЕРКА РАБОТЫ САЙТА ПРОЕКТНОГО ОФИСА
+import json
+import time
+import requests
+
+URL = 'https://cabinet.miem.hse.ru/catalog'
+
+while True:
+    with open("config.json", "r") as f: #открываем config
+        state = json.load(f)
+
+    if URL not in state or not state[URL]: #проверяем, что мы еще не сообщили о работе сайта
+        try:
+            requests.get(URL, timeout = 5) #кидаем запрос
+
+            state[URL] = True #если исключение не вылетело, то меняем состояние на True
+            with open("config.json", "w") as f: #и записываем
+                json.dump(state, f, indent=4)
+
+            bot.send_message(875771161, f"Сайт {URL} работает!")
+
+        except requests.ConnectionError:
+            pass
+
+    time.sleep(10)
 
 #webhook####################### НЕ ТРОГАТЬ!!!###################
 keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
