@@ -1,6 +1,4 @@
 from telebot import TeleBot, types
-import config
-import os
 
 from background import keep_alive
 
@@ -76,7 +74,7 @@ def download(message):
 
 @bot.message_handler(commands=["help"])
 def help(message):
-    bot.send_message(message.chat.id, "Список команд\n\n /add - добавить карточки в колоду\n/create - создать колоду"
+    bot.send_message(message.chat.id, "Список команд\n\n/add - добавить карточки в колоду\n/create - создать колоду"
                                       "\n/watch - посмотреть колоду\n/repeat - повторить слова\n/delpair - удалить пару слов\n"
                                       "/download - скачать слова из всех колод")
 
@@ -231,12 +229,11 @@ def buttons(call):
 
 #### ПРОВЕРКА РАБОТЫ САЙТА ПРОЕКТНОГО ОФИСА
 import json
-import time
 import requests
 
 URL = 'https://cabinet.miem.hse.ru/catalog'
 
-while True:
+def checker():
     with open("config.json", "r") as f: #открываем config
         state = json.load(f)
 
@@ -253,7 +250,11 @@ while True:
         except requests.ConnectionError:
             pass
 
-    time.sleep(10)
+from apscheduler.schedulers.background import BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+scheduler.add_job(checker, 'interval', seconds = 10)
 
 #webhook####################### НЕ ТРОГАТЬ!!!###################
 keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
