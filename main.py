@@ -1,5 +1,4 @@
 from telebot import TeleBot, types
-
 from background import keep_alive
 
 # from tabulate import tabulate  #посмотреть dataframe
@@ -7,7 +6,7 @@ from background import keep_alive
 
 bot = TeleBot('7422012459:AAF6gJu-dmyvVD_GNk9vLO-bNXuQm3p9Uo8')
 
-Is_awvera = 0
+Is_awvera = 1
 if Is_awvera:
     way_to_data = '/data/data.csv'
 else:
@@ -48,8 +47,6 @@ def watch(message):
 
 @bot.message_handler(commands=["repeat"])   #повторить карточки
 def repeat(message):
-    if Is_awvera:
-        bot.send_document(-4580716050, open(r'/data/data.csv', 'rb'))
     from commands.repeat import repeat_0
     repeat_0(bot, message)
 
@@ -81,57 +78,7 @@ def help(message):
 
 @bot.message_handler(commands=["version"])
 def version(message):
-    bot.send_message(message.chat.id, 'Версия бота: 15022025')
-
-
-# @bot.message_handler(commands=["parseron"])  #выключает parser
-# def parseron(message):
-#     book = openpyxl.open(way_to_data)
-#     sheets_list = book.sheetnames  # получаем список листов
-#
-#     for i in sheets_list:  # ищем лист пользователя
-#         if i == str(message.chat.id):
-#             sheet = book[i]
-#             book.active = book[i]  # задаем новую активную страницу
-#             break
-#
-#     else:  # если листа для такого пользователя нет, то создаем
-#         book.create_sheet(str(message.chat.id))
-#         book.active = book[str(message.chat.id)]
-#         sheet = book.active
-#
-#     link = sheet.cell(row = 0 + 1, column = 3 + 1)  # вносим изменения
-#     link.value = 'parser:'
-#     link = sheet.cell(row=0 + 1, column=4 + 1)
-#     link.value = 1
-#
-#     book.save(way_to_data)  # сохраняем
-#     bot.send_message(message.chat.id, 'Парсер включен')
-#
-#
-# @bot.message_handler(commands=["parseroff"])  #выключает parser
-# def parseroff(message):
-#     book = openpyxl.open(way_to_data)
-#     sheets_list = book.sheetnames  # получаем список листов
-#
-#     for i in sheets_list:  # ищем лист пользователя
-#         if i == str(message.chat.id):
-#             sheet = book[i]
-#             book.active = book[i]  # задаем новую активную страницу
-#             break
-#
-#     else:  # если листа для такого пользователя нет, то создаем
-#         book.create_sheet(str(message.chat.id))
-#         book.active = book[str(message.chat.id)]
-#         sheet = book.active
-#
-#     link = sheet.cell(row=0 + 1, column=3 + 1)  # вносим изменения
-#     link.value = 'parser:'
-#     link = sheet.cell(row=0 + 1, column=4 + 1)
-#     link.value = 0
-#
-#     book.save(way_to_data)  # сохраняем
-#     bot.send_message(message.chat.id, 'Парсер выключен')
+    bot.send_message(message.chat.id, 'Версия бота: 31032025')
 
 ################ ОБРАБОТКА КНОПОК ################
 @bot.callback_query_handler(func = lambda call:True)
@@ -226,7 +173,6 @@ def buttons(call):
         bot.send_message(call.message.chat.id, "произошло исключение")
         print('ИСКЛЮЧЕНИЕ')
 
-
 #### ПРОВЕРКА РАБОТЫ САЙТА ПРОЕКТНОГО ОФИСА
 import json
 import requests
@@ -255,6 +201,12 @@ scheduler = BackgroundScheduler()
 scheduler.start()
 
 scheduler.add_job(checker, 'interval', seconds = 10)
+
+###СОХРАНЕНИЕ БД
+def save_db():
+    bot.send_document(-4580716050, open(way_to_data, 'rb'))
+
+scheduler.add_job(save_db, 'cron', hour=22, minute=0)
 
 #webhook####################### НЕ ТРОГАТЬ!!!###################
 keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
