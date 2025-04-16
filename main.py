@@ -1,10 +1,11 @@
 from telebot import TeleBot, types
+from dotenv import load_dotenv
+import os
+
 from background import keep_alive
 
-# from tabulate import tabulate  #посмотреть dataframe
-# print(tabulate(df, headers='keys'))
-
-bot = TeleBot('7422012459:AAF6gJu-dmyvVD_GNk9vLO-bNXuQm3p9Uo8')
+load_dotenv()
+bot = TeleBot(os.getenv("BOT_TOKEN"))
 
 Is_awvera = 1
 if Is_awvera:
