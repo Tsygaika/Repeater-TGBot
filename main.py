@@ -1,17 +1,17 @@
 from telebot import TeleBot, types
 from dotenv import load_dotenv
 import os
+import platform
 
 from background import keep_alive
 
 load_dotenv()
 bot = TeleBot(os.getenv("BOT_TOKEN"))
 
-Is_awvera = 1
-if Is_awvera:
-    way_to_data = '/data/data.csv'
-else:
+if platform.node() == "Alexey":
     way_to_data = 'data/data.csv'
+else:
+    way_to_data = '/data/data.csv'
 
 ################ КОМАНДЫ ################ КОМАНДЫ ################
 @bot.message_handler(commands=["start"])
@@ -201,7 +201,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-scheduler.add_job(checker, 'interval', seconds = 10)
+# from parser import parser
+#
+# scheduler.add_job(parser, 'interval', seconds = 10, args = [bot, way_to_data])
 
 ###СОХРАНЕНИЕ БД
 def save_db():
@@ -209,7 +211,13 @@ def save_db():
 
 scheduler.add_job(save_db, 'cron', hour=22, minute=0)
 
-#webhook####################### НЕ ТРОГАТЬ!!!###################
-keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
-bot.infinity_polling(none_stop=True)
-#запуск бота
+# #webhook####################### НЕ ТРОГАТЬ!!!###################
+# keep_alive()  #запускаем flask-сервер в отдельном потоке. Подробнее ниже...
+# bot.infinity_polling(none_stop=True)
+# #запуск бота
+
+def start_bot():
+    bot.infinity_polling()  # Запуск в режиме long polling
+
+if __name__ == "__main__":
+    start_bot()  # Для тестирования одного бота
