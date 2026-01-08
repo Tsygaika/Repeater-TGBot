@@ -6,12 +6,14 @@ import platform
 from background import keep_alive
 
 load_dotenv()
-bot = TeleBot(os.getenv("BOT_TOKEN"))
+bot = TeleBot("7422012459:AAEg3BixunxMPpXtSwnb9kV5jhPezXjx61c")
 
 if platform.node() == "Alexey":
-    way_to_data = 'data/data.csv'
+    way_to_data = 'data/data_repeater.csv'
+    way_to_wordix_db = 'data/data_wordix.csv'
 else:
-    way_to_data = '/data/data.csv'
+    way_to_data = '/data/data_repeater.csv'
+    way_to_wordix_db = '/data/data_wordix.csv'
 
 ################ КОМАНДЫ ################ КОМАНДЫ ################
 @bot.message_handler(commands=["start"])
@@ -19,67 +21,65 @@ def start(message):
     markup = types.InlineKeyboardMarkup(row_width = 1)
     btn1 = types.InlineKeyboardButton(text = 'Добавить карточки', callback_data = 'add_cards')
     markup.add(btn1)
-    bot.send_message(message.chat.id, f"{message.from_user.first_name}, добро пожаловать в бота!", reply_markup = markup)
+    bot.send_message(message.chat.id, f"{message.from_user.first_name}, добро пожаловать в бота!"
+                                      f"\nВот основные команды: /help\nДобавляй слова и повторяй их. Также ты можешь "
+                                      f"отправлять мне слова, а я буду их записывать и считать кол-во", reply_markup = markup)
 
+@bot.message_handler(commands=["help"])
+def help(message):
+    bot.send_message(message.chat.id, "Список команд\n\n/add - добавить карточки в колоду\n/create - создать колоду"
+                                      "\n/watch - посмотреть колоду\n/repeat - повторить слова\n/delpair - удалить пару слов\n"
+                                      "/download - скачать слова из всех колод\n\n/view 50 - посмотреть список слов, "
+                                      "отправленных в чат\n /pop 10 - удалить топ 10 слов по частоте")
+
+@bot.message_handler(commands=["version"])
+def version(message):
+    bot.send_message(message.chat.id, 'Версия бота: 31072025')
 
 @bot.message_handler(commands=["add"])  #добавить карточку
 def add(message):
     from commands.add_cards import add_cards
     add_cards(bot, message, way_to_data)
 
-
 @bot.message_handler(commands=["create"])   #создать список
 def create(message):
     from commands.create_pack import create_pack
     create_pack(bot, message, way_to_data)
-
-@bot.message_handler(commands=["test"])   #УБРАТЬ ИЛИ ЗАМЕНИТЬ НА DATA
-def test(message):
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    btn = types.InlineKeyboardButton(text='Обновить', callback_data='update')
-    markup.add(btn)
-    bot.send_message(message.chat.id, 'текст <tg-spoiler> Ваш текст </tg-spoiler> текст', parse_mode='HTML',reply_markup = markup)
 
 @bot.message_handler(commands=["watch"])    #посмотреть список карточек
 def watch(message):
     from commands.watch import watch
     watch(bot, message, way_to_data)
 
-
 @bot.message_handler(commands=["repeat"])   #повторить карточки
 def repeat(message):
     from commands.repeat import repeat_0
     repeat_0(bot, message)
-
 
 @bot.message_handler(commands=["delpair"])   #удалить пару карточек
 def delpair(message):
     from commands.delete_pair import delete_pair
     delete_pair(bot, message, way_to_data)
 
-
 @bot.message_handler(commands=["showdata"])   #показать всю информацию о карточках в колоде
 def showdata(message):
     from commands.showdata import showdata
     showdata(bot, message, way_to_data)
-
 
 @bot.message_handler(commands=["download","load"])   #скачать все слова для конкретного пользователя
 def download(message):
     from commands.download import download
     download(bot, message, way_to_data)
 
+@bot.message_handler(commands=['pop'])  #удалить слово из списка wordix
+def pop(message):
+    from commands.wordix.pop import pop
+    pop(bot, message, way_to_wordix_db)
 
-@bot.message_handler(commands=["help"])
-def help(message):
-    bot.send_message(message.chat.id, "Список команд\n\n/add - добавить карточки в колоду\n/create - создать колоду"
-                                      "\n/watch - посмотреть колоду\n/repeat - повторить слова\n/delpair - удалить пару слов\n"
-                                      "/download - скачать слова из всех колод")
-
-
-@bot.message_handler(commands=["version"])
-def version(message):
-    bot.send_message(message.chat.id, 'Версия бота: 31032025')
+@bot.message_handler(commands=['view']) #посмотреть слова в списке wordix
+def view(message):
+    from commands.wordix.view import view
+    view(bot, message, way_to_wordix_db)
 
 ################ ОБРАБОТКА КНОПОК ################
 @bot.callback_query_handler(func = lambda call:True)
@@ -174,38 +174,45 @@ def buttons(call):
         bot.send_message(call.message.chat.id, "произошло исключение")
         print('ИСКЛЮЧЕНИЕ')
 
+#TEXT MESSAGES PROCESSING для WORDIX
+@bot.message_handler(content_types=['text'])
+def text_received(message):
+    text = message.text
+    if "/" in text:
+        bot.send_message(message.chat.id, "Неизвестная команда")
+
+    else:
+        from commands.wordix.add_word import add_word
+        add_word(bot, message, way_to_wordix_db)
+
 #### ПРОВЕРКА РАБОТЫ САЙТА ПРОЕКТНОГО ОФИСА
-import json
-import requests
+# import json
+# import requests
+#
+# URL = 'https://cabinet.miem.hse.ru/catalog'
+#
+# def checker():
+#     with open("config.json", "r") as f: #открываем config
+#         state = json.load(f)
+#
+#     if URL not in state or not state[URL]: #проверяем, что мы еще не сообщили о работе сайта
+#         try:
+#             requests.get(URL, timeout = 5) #кидаем запрос
+#
+#             state[URL] = True #если исключение не вылетело, то меняем состояние на True
+#             with open("config.json", "w") as f: #и записываем
+#                 json.dump(state, f, indent=4)
+#
+#             bot.send_message(875771161, f"Сайт {URL} работает!")
+#
+#         except requests.ConnectionError:
+#             pass
 
-URL = 'https://cabinet.miem.hse.ru/catalog'
-
-def checker():
-    with open("config.json", "r") as f: #открываем config
-        state = json.load(f)
-
-    if URL not in state or not state[URL]: #проверяем, что мы еще не сообщили о работе сайта
-        try:
-            requests.get(URL, timeout = 5) #кидаем запрос
-
-            state[URL] = True #если исключение не вылетело, то меняем состояние на True
-            with open("config.json", "w") as f: #и записываем
-                json.dump(state, f, indent=4)
-
-            bot.send_message(875771161, f"Сайт {URL} работает!")
-
-        except requests.ConnectionError:
-            pass
-
+###СОХРАНЕНИЕ БД
 from apscheduler.schedulers.background import BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-# from parser import parser
-#
-# scheduler.add_job(parser, 'interval', seconds = 10, args = [bot, way_to_data])
-
-###СОХРАНЕНИЕ БД
 def save_db():
     bot.send_document(-4580716050, open(way_to_data, 'rb'))
 
