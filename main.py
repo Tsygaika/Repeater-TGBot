@@ -8,12 +8,12 @@ from background import keep_alive
 load_dotenv()
 bot = TeleBot("7422012459:AAEg3BixunxMPpXtSwnb9kV5jhPezXjx61c")
 
-if platform.node() == "Alexey":
-    way_to_data = 'data/data_repeater.csv'
-    way_to_wordix_db = 'data/data_wordix.csv'
-else:
-    way_to_data = '/data/data_repeater.csv'
-    way_to_wordix_db = '/data/data_wordix.csv'
+# if platform.node() == "Alexey":
+way_to_data = 'data/data_repeater.csv'
+way_to_wordix_db = 'data/data_wordix.csv'
+# else:
+#     way_to_data = '/data/data_repeater.csv'
+#     way_to_wordix_db = '/data/data_wordix.csv'
 
 ################ КОМАНДЫ ################ КОМАНДЫ ################
 @bot.message_handler(commands=["start"])
